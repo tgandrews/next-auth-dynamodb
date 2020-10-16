@@ -6,6 +6,11 @@ A dynamodb provider for [next-auth](https://next-auth.js.org/).
 
 ## Features
 
+## Debugging
+
+Debug logging is built in and to enable it set the environment variable `NEXT_AUTH_DYNAMODB_DEBUG` to any value.
+This will return detailed information including the method called and additional information appropriate for that method.
+
 ## Support
 
 next-auth-dyanmodb is provided as-is, free of charge. For support, you have a few choices:

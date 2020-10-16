@@ -13,7 +13,7 @@
     "format": "prettier **/*.ts",
     "release": "np --no-publish --branch=main"
   },
-  "repository": "git://github.com/tgandrews/omanyd.git",
+  "repository": "git://github.com/tgandrews/next-auth-dynamodb.git",
   "keywords": [
     "next-auth",
     "dynamodb",
@@ -25,12 +25,14 @@
   "license": "MIT",
   "dependencies": {
     "joi": "^17.2.1",
-    "omanyd": "^0.3.0"
+    "omanyd": "^0.3.0",
+    "pino": "^6.7.0"
   },
   "devDependencies": {
     "@types/jest": "^26.0.10",
     "@types/next-auth": "^3.1.12",
     "@types/node": "^14.6.2",
+    "@types/pino": "^6.3.2",
     "@types/uuid": "^8.3.0",
     "husky": "^4.2.5",
     "jest": "^26.4.2",
