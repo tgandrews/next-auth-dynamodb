@@ -1,6 +1,10 @@
 import type { Adapter } from "next-auth/adapters";
 import Omanyd from "omanyd";
 import Joi from "joi";
+import pino from "pino";
+
+const LOGGING_ENABLED = Boolean(process.env.NEXT_AUTH_DYNAMODB_DEBUG);
+const logger = pino();
 
 interface User {
   id: string;
@@ -80,42 +84,60 @@ const SessionStore = Omanyd.define<Session>({
 
 const adapter: Adapter = {
   async getAdapter(options) {
+    const log = (method: string, info: { [key: string]: any }) => {
+      if (!LOGGING_ENABLED) {
+        return;
+      }
+      logger.info({ method, ...info });
+    };
+
     const sessionLength = options.session?.maxAge ?? 30 * 24 * 60 * 60;
 
     return {
-      async createUser({ email, emailVerified, name, image }: Profile) {
+      async createUser(profile: Profile) {
+        log("createUser", { profile });
+        const { email, emailVerified, name, image } = profile;
         const savedUser = await UserStore.create({
           email,
           emailVerified,
           name,
           image,
         });
+        log("createUser", { savedUser });
         return savedUser;
       },
 
       async getUser(id: string) {
+        log("getUser", { id });
         const user = await UserStore.getByHashKey(id);
+        log("getUser", { user });
         return user;
       },
       async getUserByEmail(email: string) {
+        log("getUserByEmail", { email });
         const user = await UserStore.getByIndex("UserEmailIndex", email);
+        log("getUserByEmail", { user });
         return user;
       },
       async getUserByProviderAccountId(
         providerId: string,
         providerAccountId: string
       ) {
+        log("getUserByProviderAccountId", { providerId, providerAccountId });
         const account = await AccountStore.getByHashAndRangeKey(
           providerId,
           providerAccountId
         );
+        log("getUserByProviderAccountId", { account });
         if (!account) {
           return null;
         }
         const user = await UserStore.getByHashKey(account.userId);
+        log("getUserByProviderAccountId", { user });
         return user;
       },
       async updateUser(user: User) {
+        log("updateUser", { user });
         const updatedUser = await UserStore.put(user);
         return updatedUser;
       },
@@ -129,6 +151,15 @@ const adapter: Adapter = {
         accessToken: string,
         accessTokenExpires: number
       ) {
+        log("linkAccount", {
+          userId,
+          providerId,
+          providerType,
+          providerAccountId,
+          refreshToken,
+          accessToken,
+          accessTokenExpires,
+        });
         await AccountStore.create({
           userId,
           providerId,
@@ -142,39 +173,50 @@ const adapter: Adapter = {
 
       // Session
       async createSession(user: User): Promise<NextAuthSession> {
+        log("createSession", { user });
         const session = await SessionStore.create({
           userId: user.id,
           expires: Math.floor(Date.now() / 1000) + sessionLength,
         });
 
-        return {
+        const nextAuthSession: NextAuthSession = {
           sessionToken: session.id,
           expires: session.expires,
           userId: session.userId,
         };
+
+        log("createSession", { session, nextAuthSession });
+        return nextAuthSession;
       },
       async getSession(sessionToken: string): Promise<NextAuthSession | null> {
+        log("getSession", { sessionToken });
         const session = await SessionStore.getByHashKey(sessionToken);
+        log("getSession", { session });
         if (!session) {
           return null;
         }
         if (session.expires <= Math.floor(Date.now() / 1000)) {
           return null;
         }
-        return {
+        const nextAuthSession: NextAuthSession = {
           sessionToken: session.id,
           expires: session.expires,
           userId: session.userId,
         };
+
+        log("getSession", { nextAuthSession });
+        return nextAuthSession;
       },
       async deleteSession() {
+        log("deleteSession", {});
         // TODO: Should be handled by dynamodb TTL
       },
-      async updateSession(session: NextAuthSession) {
+      async updateSession(nextAuthSession: NextAuthSession) {
+        log("updateSession", { nextAuthSession });
         await SessionStore.put({
-          id: session.sessionToken,
+          id: nextAuthSession.sessionToken,
           expires: Math.floor(Date.now() / 1000) + sessionLength,
-          userId: session.userId,
+          userId: nextAuthSession.userId,
         });
       },
     };

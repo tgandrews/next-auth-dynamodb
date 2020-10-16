@@ -2,7 +2,6 @@ import Omanyd from "omanyd";
 import type { AppOptions } from "next-auth";
 
 import nextAuthDynamodb from "./";
-import { date } from "joi";
 
 describe("next-auth-dynamodb", () => {
   const opts = {} as AppOptions;
