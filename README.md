@@ -8,7 +8,7 @@ A dynamodb provider for [next-auth](https://next-auth.js.org/).
 
 ## Debugging
 
-Debug logging is built in and to enable it set the environment variable `NEXT_AUTH_DYNAMOD_DEBUG` to any value.
+Debug logging is built in and to enable it set the environment variable `NEXT_AUTH_DYNAMODB_DEBUG` to any value.
 This will return detailed information including the method called and additional information appropriate for that method.
 
 ## Support
