@@ -13,7 +13,7 @@
     "format": "prettier **/*.ts",
     "release": "np --no-publish --branch=main"
   },
-  "repository": "git://github.com/tgandrews/omanyd.git",
+  "repository": "git://github.com/tgandrews/next-auth-dynamodb.git",
   "keywords": [
     "next-auth",
     "dynamodb",
