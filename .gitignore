@@ -1,0 +1,12 @@
+*.node
+node_modules/
+build/
+Debug/
+Release/
+npm-debug.log
+tmp
+covreporter/
+coverage/
+.tern-port
+lib
+.npmrc

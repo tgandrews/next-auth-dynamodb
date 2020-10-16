@@ -1,0 +1,55 @@
+{
+  "name": "next-auth-dynamodb",
+  "version": "0.0.1",
+  "contributors": [
+    "Tom Andrews <git@tomandrews.co.uk>"
+  ],
+  "description": "DynamoDB provider for next-auth",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build": "rm -rf lib && tsc",
+    "test": "./scripts/test.sh",
+    "format": "prettier **/*.ts",
+    "release": "np --no-publish --branch=main"
+  },
+  "repository": "git://github.com/tgandrews/omanyd.git",
+  "keywords": [
+    "next-auth",
+    "dynamodb",
+    "next-auth-dynamodb"
+  ],
+  "engines": {
+    "node": ">=12.8.1"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "joi": "^17.2.1",
+    "omanyd": "^0.3.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^26.0.10",
+    "@types/next-auth": "^3.1.12",
+    "@types/node": "^14.6.2",
+    "@types/uuid": "^8.3.0",
+    "husky": "^4.2.5",
+    "jest": "^26.4.2",
+    "lint-staged": "^10.2.13",
+    "np": "^6.5.0",
+    "prettier": "^2.1.1",
+    "ts-jest": "^26.3.0",
+    "ts-node": "^9.0.0",
+    "typescript": "^4.0.2",
+    "wait-on": "^5.2.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{ts,md}": [
+      "prettier --write"
+    ]
+  }
+}
