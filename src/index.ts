@@ -4,7 +4,7 @@ import Joi from "joi";
 import pino from "pino";
 
 const LOGGING_ENABLED = Boolean(process.env.NEXT_AUTH_DYNAMODB_DEBUG);
-const logger = pino();
+const logger = pino({ enabled: LOGGING_ENABLED });
 
 interface User {
   id: string;
@@ -85,9 +85,6 @@ const SessionStore = Omanyd.define<Session>({
 const adapter: Adapter = {
   async getAdapter(options) {
     const log = (method: string, info: { [key: string]: any }) => {
-      if (!LOGGING_ENABLED) {
-        return;
-      }
       logger.info({ method, ...info });
     };
 
