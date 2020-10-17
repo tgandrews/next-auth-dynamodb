@@ -50,6 +50,7 @@ const AccountStore = Omanyd.define<Account>({
     accessToken: Joi.string().required(),
     accessTokenExpires: Joi.number(),
   },
+  indexes: [{ hashKey: "userId", name: "AccountsUserIdIndex", type: "global" }],
 });
 
 interface Profile {
@@ -226,6 +227,17 @@ const adapter: Adapter = {
       },
     };
   },
+};
+
+export const getAccount = async (
+  userId: string,
+  providerId: string
+): Promise<Account | null> => {
+  const account = await AccountStore.getByIndex("AccountsUserIdIndex", userId);
+  if (account?.providerId !== providerId) {
+    return null;
+  }
+  return account;
 };
 
 export default adapter;
