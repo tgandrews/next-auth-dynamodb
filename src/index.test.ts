@@ -199,7 +199,7 @@ describe("next-auth-dynamodb", () => {
         userId: savedUser.id,
       });
       expect(session.expires).toBeGreaterThanOrEqual(
-        Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60 - 1
+        Date.now() + (30 * 24 * 60 * 60 - 2) * 1000
       );
     });
 
