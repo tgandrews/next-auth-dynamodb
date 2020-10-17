@@ -11,7 +11,7 @@ interface User {
   name: string;
   email: string;
   image: string;
-  emailVerified: boolean;
+  emailVerified?: boolean;
 }
 
 const UserStore = Omanyd.define<User>({
@@ -56,7 +56,7 @@ interface Profile {
   name: string;
   email: string;
   image: string;
-  emailVerified: boolean;
+  emailVerified?: boolean;
 }
 
 interface Session {
@@ -94,12 +94,15 @@ const adapter: Adapter = {
       async createUser(profile: Profile) {
         log("createUser", { profile });
         const { email, emailVerified, name, image } = profile;
-        const savedUser = await UserStore.create({
+        const user: Omit<User, "id"> = {
           email,
-          emailVerified,
           name,
           image,
-        });
+        };
+        if (emailVerified !== undefined) {
+          user.emailVerified = emailVerified;
+        }
+        const savedUser = await UserStore.create(user);
         log("createUser", { savedUser });
         return savedUser;
       },

@@ -21,6 +21,18 @@ describe("next-auth-dynamodb", () => {
       expect(readUser).toStrictEqual(savedUser);
     });
 
+    it("should not blow up if the user email verify state is unknown", async () => {
+      const adapter = await nextAuthDynamodb.getAdapter(opts);
+      const savedUser = await adapter.createUser({
+        email: "foo@bar.com",
+        name: "Foo Bar",
+        image: "foo.png",
+      });
+      const readUser = await adapter.getUserByEmail("foo@bar.com");
+      expect(readUser).toStrictEqual(savedUser);
+      expect(readUser.emailVerified).toBeUndefined();
+    });
+
     it("should return the created user by id", async () => {
       const adapter = await nextAuthDynamodb.getAdapter(opts);
       const savedUser = await adapter.createUser({
