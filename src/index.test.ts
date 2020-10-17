@@ -63,6 +63,36 @@ describe("next-auth-dynamodb", () => {
       expect(readUser).toStrictEqual(savedUser);
     });
 
+    it("should not blow up if a provider uses numeric account ids", async () => {
+      const adapter = await nextAuthDynamodb.getAdapter(opts);
+      const savedUser = await adapter.createUser({
+        email: "foo@bar.com",
+        emailVerified: false,
+        name: "Foo Bar",
+        image: "foo.png",
+      });
+
+      const providerId = `providerId-${Date.now()}`;
+      const providerAccountId = Date.now();
+
+      await adapter.linkAccount(
+        savedUser.id,
+        providerId,
+        "providerType",
+        providerAccountId as any, // Hack as the @types/next-auth is not correct
+        "refreshToken",
+        "accessToken",
+        Date.now()
+      );
+
+      const readUser = await adapter.getUserByProviderAccountId(
+        providerId,
+        providerAccountId as any
+      );
+
+      expect(readUser).toStrictEqual(savedUser);
+    });
+
     it("should be able to update the user", async () => {
       const adapter = await nextAuthDynamodb.getAdapter(opts);
       const savedUser = await adapter.createUser({

@@ -118,12 +118,12 @@ const adapter: Adapter = {
       },
       async getUserByProviderAccountId(
         providerId: string,
-        providerAccountId: string
+        providerAccountId: string | number
       ) {
         log("getUserByProviderAccountId", { providerId, providerAccountId });
         const account = await AccountStore.getByHashAndRangeKey(
           providerId,
-          providerAccountId
+          providerAccountId.toString()
         );
         log("getUserByProviderAccountId", { account });
         if (!account) {
@@ -143,7 +143,7 @@ const adapter: Adapter = {
         userId: string,
         providerId: string,
         providerType: string,
-        providerAccountId: string,
+        providerAccountId: string | number,
         refreshToken: string,
         accessToken: string,
         accessTokenExpires: number
@@ -160,7 +160,7 @@ const adapter: Adapter = {
         await AccountStore.create({
           userId,
           providerId,
-          providerAccountId,
+          providerAccountId: providerAccountId.toString(),
           providerType,
           refreshToken,
           accessToken,
