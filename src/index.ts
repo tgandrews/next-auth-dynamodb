@@ -34,7 +34,7 @@ interface Account {
   providerType: string;
   refreshToken?: string;
   accessToken: string;
-  accessTokenExpires: number;
+  accessTokenExpires?: number;
 }
 
 const AccountStore = Omanyd.define<Account>({
@@ -48,7 +48,7 @@ const AccountStore = Omanyd.define<Account>({
     userId: Joi.string().required(),
     refreshToken: Joi.string(),
     accessToken: Joi.string().required(),
-    accessTokenExpires: Joi.number().required(),
+    accessTokenExpires: Joi.number(),
   },
 });
 
@@ -149,7 +149,7 @@ const adapter: Adapter = {
         providerAccountId: string | number,
         refreshToken: string,
         accessToken: string,
-        accessTokenExpires: number
+        accessTokenExpires: number | null
       ) {
         log("linkAccount", {
           userId,
@@ -160,15 +160,18 @@ const adapter: Adapter = {
           accessToken,
           accessTokenExpires,
         });
-        await AccountStore.create({
+        const account: Omit<Account, "id"> = {
           userId,
           providerId,
           providerAccountId: providerAccountId.toString(),
           providerType,
           refreshToken,
           accessToken,
-          accessTokenExpires,
-        });
+        };
+        if (accessTokenExpires) {
+          account.accessTokenExpires = accessTokenExpires;
+        }
+        await AccountStore.create(account);
       },
 
       // Session
