@@ -186,7 +186,7 @@ const adapter: Adapter = {
 
         const nextAuthSession: NextAuthSession = {
           sessionToken: session.id,
-          expires: session.expires,
+          expires: session.expires * 1000,
           userId: session.userId,
         };
 
@@ -205,7 +205,7 @@ const adapter: Adapter = {
         }
         const nextAuthSession: NextAuthSession = {
           sessionToken: session.id,
-          expires: session.expires,
+          expires: session.expires * 1000,
           userId: session.userId,
         };
 
