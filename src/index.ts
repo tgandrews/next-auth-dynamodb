@@ -165,11 +165,13 @@ const adapter: Adapter = {
           providerId,
           providerAccountId: providerAccountId.toString(),
           providerType,
-          refreshToken,
           accessToken,
         };
         if (accessTokenExpires) {
           account.accessTokenExpires = accessTokenExpires;
+        }
+        if (refreshToken) {
+          account.refreshToken = refreshToken;
         }
         await AccountStore.create(account);
       },

@@ -105,6 +105,36 @@ describe("next-auth-dynamodb", () => {
       expect(readUser).toStrictEqual(savedUser);
     });
 
+    it("should not fail to link when there is no access refresh token", async () => {
+      const adapter = await nextAuthDynamodb.getAdapter(opts);
+      const savedUser = await adapter.createUser({
+        email: "foo@bar.com",
+        emailVerified: false,
+        name: "Foo Bar",
+        image: "foo.png",
+      });
+
+      const providerId = `providerId-${Date.now()}`;
+      const providerAccountId = `providerAccountId-${Date.now()}`;
+
+      await adapter.linkAccount(
+        savedUser.id,
+        providerId,
+        "providerType",
+        providerAccountId,
+        undefined,
+        "accessToken",
+        Date.now()
+      );
+
+      const readUser = await adapter.getUserByProviderAccountId(
+        providerId,
+        providerAccountId
+      );
+
+      expect(readUser).toStrictEqual(savedUser);
+    });
+
     it("should not blow up if a provider uses numeric account ids", async () => {
       const adapter = await nextAuthDynamodb.getAdapter(opts);
       const savedUser = await adapter.createUser({
