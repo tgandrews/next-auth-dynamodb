@@ -148,9 +148,9 @@ const adapter: Adapter = {
         providerId: string,
         providerType: string,
         providerAccountId: string | number,
-        refreshToken: string,
+        refreshToken: string | undefined,
         accessToken: string,
-        accessTokenExpires: number | null
+        accessTokenExpires: number
       ) {
         log("linkAccount", {
           userId,
@@ -238,6 +238,41 @@ export const getAccount = async (
     return null;
   }
   return account;
+};
+
+interface SeedData {
+  email: string;
+  name: string;
+  image: string;
+  accounts: {
+    providerId: string;
+    providerAccountId: string;
+    accessToken: string;
+  }[];
+}
+
+export const seedSession = async (details: SeedData) => {
+  const a = await adapter.getAdapter({} as any);
+  const user = await a.createUser({
+    email: details.email,
+    name: details.name,
+    image: details.image,
+  });
+  await Promise.all(
+    details.accounts.map(async (account) => {
+      await a.linkAccount(
+        user.id,
+        account.providerId,
+        "oauth",
+        account.providerAccountId,
+        "",
+        account.accessToken,
+        Date.now()
+      );
+    })
+  );
+  const session = await a.createSession(user);
+  return session.sessionToken;
 };
 
 export default adapter;
