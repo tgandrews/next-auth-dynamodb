@@ -252,6 +252,7 @@ interface SeedData {
 }
 
 export const seedSession = async (details: SeedData) => {
+  await Omanyd.createTables();
   const a = await adapter.getAdapter({} as any);
   const user = await a.createUser({
     email: details.email,
