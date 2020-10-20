@@ -1,7 +1,7 @@
 import Omanyd from "omanyd";
 import type { AppOptions } from "next-auth";
 
-import nextAuthDynamodb, { getAccount } from "./";
+import nextAuthDynamodb, { getAccount, seedSession } from "./";
 
 describe("next-auth-dynamodb", () => {
   const opts = {} as AppOptions;
@@ -94,7 +94,7 @@ describe("next-auth-dynamodb", () => {
           providerAccountId,
           "refreshToken",
           "accessToken",
-          null
+          null as any
         );
 
         const readUser = await adapter.getUserByProviderAccountId(
@@ -122,7 +122,7 @@ describe("next-auth-dynamodb", () => {
           providerId,
           "providerType",
           providerAccountId,
-          undefined,
+          undefined as any,
           "accessToken",
           Date.now()
         );
@@ -330,6 +330,33 @@ describe("next-auth-dynamodb", () => {
       const account = await getAccount(savedUser.id, "something");
 
       expect(account).toBeNull();
+    });
+  });
+
+  describe("seedSession", () => {
+    it("should allow a user to be created with an account and session and pass back a session id", async () => {
+      const adapter = await nextAuthDynamodb.getAdapter(opts);
+      const sessionToken = await seedSession({
+        email: "foo@bar.com",
+        name: "Some user",
+        image: "profile.png",
+        accounts: [
+          {
+            providerId: "someProvider",
+            providerAccountId: "someProviderAccountId",
+            accessToken: "my access token",
+          },
+        ],
+      });
+
+      const session = await adapter.getSession(sessionToken);
+      const sessionUser = await adapter.getUser(session.userId);
+      const providerUser = await adapter.getUserByProviderAccountId(
+        "someProvider",
+        "someProviderAccountId"
+      );
+
+      expect(sessionUser).toStrictEqual(providerUser);
     });
   });
 });
