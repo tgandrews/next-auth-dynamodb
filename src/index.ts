@@ -1,12 +1,12 @@
 import type { Adapter } from "next-auth/adapters";
-import Omanyd from "omanyd";
+import Omanyd, { Options } from "omanyd";
 import Joi from "joi";
 import pino from "pino";
 
 const LOGGING_ENABLED = Boolean(process.env.NEXT_AUTH_DYNAMODB_DEBUG);
 const logger = pino({ enabled: LOGGING_ENABLED });
 
-interface User {
+export interface User {
   id: string;
   name: string;
   email: string;
@@ -14,18 +14,20 @@ interface User {
   emailVerified?: boolean;
 }
 
-const UserStore = Omanyd.define<User>({
+export const userDefinition: Options = {
   name: "users",
   hashKey: "id",
-  schema: {
+  schema: Joi.object({
     id: Omanyd.types.id(),
     email: Joi.string().required(),
     name: Joi.string(),
     image: Joi.string(),
     emailVerified: Joi.boolean(),
-  },
+  }).unknown(true),
   indexes: [{ hashKey: "email", name: "UserEmailIndex", type: "global" }],
-});
+};
+
+const UserStore = Omanyd.define<User>(userDefinition);
 
 interface Account {
   providerId: string;
@@ -41,7 +43,7 @@ const AccountStore = Omanyd.define<Account>({
   name: "accounts",
   hashKey: "providerId",
   rangeKey: "providerAccountId",
-  schema: {
+  schema: Joi.object({
     providerId: Joi.string().required(),
     providerAccountId: Joi.string().required(),
     providerType: Joi.string().required(),
@@ -49,7 +51,7 @@ const AccountStore = Omanyd.define<Account>({
     refreshToken: Joi.string(),
     accessToken: Joi.string().required(),
     accessTokenExpires: Joi.number(),
-  },
+  }),
   indexes: [{ hashKey: "userId", name: "AccountsUserIdIndex", type: "global" }],
 });
 
@@ -75,11 +77,11 @@ interface NextAuthSession {
 const SessionStore = Omanyd.define<Session>({
   name: "sessions",
   hashKey: "id",
-  schema: {
+  schema: Joi.object({
     id: Omanyd.types.id(),
     userId: Joi.string().required(),
     expires: Joi.number().required(),
-  },
+  }),
   indexes: [{ hashKey: "userId", name: "SessionUserIdIndex", type: "global" }],
 });
 
@@ -95,15 +97,12 @@ const adapter: Adapter = {
       async createUser(profile: Profile) {
         log("createUser", { profile });
         const { email, emailVerified, name, image } = profile;
-        const user: Omit<User, "id"> = {
+        const savedUser = await UserStore.create({
           email,
+          emailVerified,
           name,
           image,
-        };
-        if (emailVerified !== undefined) {
-          user.emailVerified = emailVerified;
-        }
-        const savedUser = await UserStore.create(user);
+        });
         log("createUser", { savedUser });
         return savedUser;
       },
@@ -167,12 +166,10 @@ const adapter: Adapter = {
           providerAccountId: providerAccountId.toString(),
           providerType,
           accessToken,
+          refreshToken,
         };
         if (accessTokenExpires) {
           account.accessTokenExpires = accessTokenExpires;
-        }
-        if (refreshToken) {
-          account.refreshToken = refreshToken;
         }
         await AccountStore.create(account);
       },
@@ -266,7 +263,7 @@ export const seedSession = async (details: SeedData) => {
         account.providerId,
         "oauth",
         account.providerAccountId,
-        "",
+        undefined as any,
         account.accessToken,
         Date.now()
       );
