@@ -81,6 +81,19 @@ describe("next-auth-dynamodb", () => {
         expect(readUser).toStrictEqual(savedUser);
       });
 
+      it("should return null if no account given the provider and providerId", async () => {
+        const adapter = await nextAuthDynamodb.getAdapter(opts);
+        const providerId = `providerId-${Date.now()}`;
+        const providerAccountId = `providerAccountId-${Date.now()}`;
+
+        const readUser = await adapter.getUserByProviderAccountId(
+          providerId,
+          providerAccountId
+        );
+
+        expect(readUser).toBeNull();
+      });
+
       it("should not fail to link when there is no access token expiry date", async () => {
         const adapter = await nextAuthDynamodb.getAdapter(opts);
         const savedUser = await adapter.createUser({
@@ -262,6 +275,11 @@ describe("next-auth-dynamodb", () => {
           savedSession.sessionToken
         );
         expect(updatedSession.expires).toBeGreaterThan(savedSession.expires);
+      });
+
+      it("should should resolve delete calls", async () => {
+        const adapter = await nextAuthDynamodb.getAdapter(opts);
+        await expect(adapter.deleteSession("")).resolves.toBeUndefined();
       });
     });
   });
