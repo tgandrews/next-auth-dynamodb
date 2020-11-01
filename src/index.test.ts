@@ -1,12 +1,18 @@
 import Omanyd from "omanyd";
+import Joi from "joi";
 import type { AppOptions } from "next-auth";
 
-import nextAuthDynamodb, { getAccount, seedSession } from "./";
+import nextAuthDynamodb, {
+  getAccount,
+  seedSession,
+  userDefinition,
+  User,
+} from "./";
 
 describe("next-auth-dynamodb", () => {
   const opts = {} as AppOptions;
-
   beforeEach(() => Omanyd.clearTables());
+
   describe("Adapter", () => {
     describe("user", () => {
       it("should create and return the user by email", async () => {
@@ -73,6 +79,19 @@ describe("next-auth-dynamodb", () => {
         );
 
         expect(readUser).toStrictEqual(savedUser);
+      });
+
+      it("should return null if no account given the provider and providerId", async () => {
+        const adapter = await nextAuthDynamodb.getAdapter(opts);
+        const providerId = `providerId-${Date.now()}`;
+        const providerAccountId = `providerAccountId-${Date.now()}`;
+
+        const readUser = await adapter.getUserByProviderAccountId(
+          providerId,
+          providerAccountId
+        );
+
+        expect(readUser).toBeNull();
       });
 
       it("should not fail to link when there is no access token expiry date", async () => {
@@ -257,6 +276,11 @@ describe("next-auth-dynamodb", () => {
         );
         expect(updatedSession.expires).toBeGreaterThan(savedSession.expires);
       });
+
+      it("should should resolve delete calls", async () => {
+        const adapter = await nextAuthDynamodb.getAdapter(opts);
+        await expect(adapter.deleteSession("")).resolves.toBeUndefined();
+      });
     });
   });
 
@@ -357,6 +381,90 @@ describe("next-auth-dynamodb", () => {
       );
 
       expect(sessionUser).toStrictEqual(providerUser);
+    });
+  });
+
+  describe("extending user", () => {
+    it("should be possible to build a user space extension of user", async () => {
+      interface ExtendedUser extends User {
+        extras: string[];
+      }
+
+      const ExtendedUserStore = Omanyd.define<ExtendedUser>({
+        ...userDefinition,
+        schema: userDefinition.schema.keys({
+          extras: Joi.array().items(Joi.string().required()).default([]),
+        }),
+        allowNameClash: true,
+      });
+
+      const sessionToken = await seedSession({
+        email: "foo@bar.com",
+        name: "Some user",
+        image: "profile.png",
+        accounts: [
+          {
+            providerId: "someProvider",
+            providerAccountId: "someProviderAccountId",
+            accessToken: "my access token",
+          },
+        ],
+      });
+
+      const adapter = await nextAuthDynamodb.getAdapter(opts);
+      const session = await adapter.getSession(sessionToken);
+      const sessionUser = await adapter.getUser(session.userId);
+
+      const extendedUser = await ExtendedUserStore.getByHashKey(sessionUser.id);
+      expect(extendedUser).toStrictEqual({
+        ...sessionUser,
+        extras: [],
+      });
+    });
+
+    it("should be possible to add fields to the user", async () => {
+      interface ExtendedUser extends User {
+        extras: string[];
+      }
+
+      const ExtendedUserStore = Omanyd.define<ExtendedUser>({
+        ...userDefinition,
+        schema: userDefinition.schema.keys({
+          extras: Joi.array().items(Joi.string().required()).default([]),
+        }),
+        allowNameClash: true,
+      });
+
+      const sessionToken = await seedSession({
+        email: "foo@bar.com",
+        name: "Some user",
+        image: "profile.png",
+        accounts: [
+          {
+            providerId: "someProvider",
+            providerAccountId: "someProviderAccountId",
+            accessToken: "my access token",
+          },
+        ],
+      });
+
+      const adapter = await nextAuthDynamodb.getAdapter(opts);
+      const session = await adapter.getSession(sessionToken);
+      const sessionUser = await adapter.getUser(session.userId);
+
+      await ExtendedUserStore.put({
+        ...sessionUser,
+        extras: ["hello", "world"],
+      });
+
+      const sessionUser2 = await adapter.getUser(session.userId);
+      const extendedUser = await ExtendedUserStore.getByHashKey(sessionUser.id);
+
+      expect(sessionUser2.extras).toStrictEqual(["hello", "world"]);
+      expect(extendedUser).toStrictEqual({
+        ...sessionUser,
+        extras: ["hello", "world"],
+      });
     });
   });
 });
