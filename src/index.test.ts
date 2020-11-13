@@ -51,6 +51,17 @@ describe("next-auth-dynamodb", () => {
         expect(readUser).toStrictEqual(savedUser);
       });
 
+      it("should not blow up if the user's email address is null", async () => {
+        const adapter = await nextAuthDynamodb.getAdapter(opts);
+        const savedUser = await adapter.createUser({
+          email: null,
+          name: "Null Email",
+          image: "foo.png",
+        });
+        const readUser = await adapter.getUser(savedUser.id);
+        expect(readUser).toStrictEqual(savedUser);
+      });
+
       it("should be able to link a user to the a provider and return the user", async () => {
         const adapter = await nextAuthDynamodb.getAdapter(opts);
         const savedUser = await adapter.createUser({

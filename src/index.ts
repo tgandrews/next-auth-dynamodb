@@ -9,7 +9,7 @@ const logger = pino({ enabled: LOGGING_ENABLED });
 export interface User {
   id: string;
   name: string;
-  email: string;
+  email?: string;
   image: string;
   emailVerified?: boolean;
 }
@@ -19,7 +19,7 @@ export const userDefinition: Options = {
   hashKey: "id",
   schema: Joi.object({
     id: Omanyd.types.id(),
-    email: Joi.string().required(),
+    email: Joi.string(),
     name: Joi.string(),
     image: Joi.string(),
     emailVerified: Joi.boolean(),
@@ -57,7 +57,7 @@ const AccountStore = Omanyd.define<Account>({
 
 interface Profile {
   name: string;
-  email: string;
+  email: string | null;
   image: string;
   emailVerified?: boolean;
 }
@@ -98,7 +98,7 @@ const adapter: Adapter = {
         log("createUser", { profile });
         const { email, emailVerified, name, image } = profile;
         const savedUser = await UserStore.create({
-          email,
+          email: email ? email : undefined,
           emailVerified,
           name,
           image,
