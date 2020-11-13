@@ -9,7 +9,7 @@ const logger = pino({ enabled: LOGGING_ENABLED });
 export interface User {
   id: string;
   name: string;
-  email?: null | string;
+  email?: string;
   image: string;
   emailVerified?: boolean;
 }
@@ -57,7 +57,7 @@ const AccountStore = Omanyd.define<Account>({
 
 interface Profile {
   name: string;
-  email?: string;
+  email: string | null;
   image: string;
   emailVerified?: boolean;
 }
