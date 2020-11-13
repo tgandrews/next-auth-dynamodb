@@ -1,6 +1,6 @@
 {
   "name": "next-auth-dynamodb",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "contributors": [
     "Tom Andrews <git@tomandrews.co.uk>"
   ],
