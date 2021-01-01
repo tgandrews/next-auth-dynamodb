@@ -6,10 +6,45 @@ A dynamodb provider for [next-auth](https://next-auth.js.org/).
 
 ## Features
 
+- Saving and retrieving of sessions from dynamodb
+- Seeding of sessions for tests
+- Retrieving of full linked provider information for a user
+
 ## Debugging
 
 Debug logging is built in and to enable it set the environment variable `NEXT_AUTH_DYNAMODB_DEBUG` to any value.
 This will return detailed information including the method called and additional information appropriate for that method.
+
+### Example config
+
+To use `next-auth-dynamodb` you need to provide it as an adapter in the `next-auth` config.
+
+Here is an example config for use with GitHub login.
+
+```ts
+import { NextApiRequest, NextApiResponse } from "next";
+import NextAuth, { InitOptions } from "next-auth";
+import Providers from "next-auth/providers";
+import NextAuthDynamodb from "next-auth-dynamodb";
+
+const options: InitOptions = {
+  debug: Boolean(process.env.NEXT_AUTH_DEBUG),
+  providers: [
+    Providers.GitHub({
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      scope: "user",
+    }),
+  ],
+  adapter: NextAuthDynamodb,
+  session: {
+    jwt: false,
+  },
+};
+
+export default (req: NextApiRequest, res: NextApiResponse) =>
+  NextAuth(req, res, options);
+```
 
 ## Support
 
