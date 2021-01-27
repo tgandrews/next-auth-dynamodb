@@ -2,6 +2,7 @@ import type { Adapter } from "next-auth/adapters";
 import Omanyd, { Options } from "omanyd";
 import Joi from "joi";
 import pino from "pino";
+import { createHash } from "crypto";
 
 const LOGGING_ENABLED = Boolean(process.env.NEXT_AUTH_DYNAMODB_DEBUG);
 const logger = pino({ enabled: LOGGING_ENABLED });
@@ -53,6 +54,20 @@ const AccountStore = Omanyd.define<Account>({
     accessTokenExpires: Joi.number(),
   }),
   indexes: [{ hashKey: "userId", name: "AccountsUserIdIndex", type: "global" }],
+});
+
+interface VerificationRequest {
+  token: string;
+  identifier: string;
+}
+
+const VerificationRequestStore = Omanyd.define<VerificationRequest>({
+  name: "verificationRequests",
+  hashKey: "token",
+  schema: Joi.object({
+    token: Joi.string().required(),
+    identifier: Joi.string().required(),
+  }),
 });
 
 interface Profile {
@@ -221,6 +236,67 @@ const adapter: Adapter = {
           expires: Math.floor(Date.now() / 1000) + sessionLength,
           userId: nextAuthSession.userId,
         });
+      },
+
+      async createVerificationRequest(
+        identifier,
+        url,
+        token,
+        secret,
+        provider,
+        _options
+      ) {
+        log("createVerificationRequest", {
+          identifier,
+          url,
+          token,
+          secret,
+          provider,
+        });
+
+        const hashedToken = createHash("sha256")
+          .update(`${token}${secret}`)
+          .digest("hex");
+
+        const verificationRequest = await VerificationRequestStore.create({
+          token: hashedToken,
+          identifier,
+        });
+
+        await provider.sendVerificationRequest({
+          identifier,
+          url,
+          token,
+          provider,
+          baseUrl: options.baseUrl,
+        });
+
+        return verificationRequest;
+      },
+
+      async getVerificationRequest(identifier, token, secret, provider) {
+        log("getVerificationRequest", { identifier, token, secret, provider });
+
+        const hashedToken = createHash("sha256")
+          .update(`${token}${secret}`)
+          .digest("hex");
+
+        return VerificationRequestStore.getByHashKey(hashedToken);
+      },
+
+      async deleteVerificationRequest(identifier, token, secret, provider) {
+        log("deleteVerificationRequest", {
+          identifier,
+          token,
+          secret,
+          provider,
+        });
+
+        const hashedToken = createHash("sha256")
+          .update(`${token}${secret}`)
+          .digest("hex");
+
+        await VerificationRequestStore.deleteByHashKey(hashedToken);
       },
     };
   },
