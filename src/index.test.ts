@@ -1,6 +1,7 @@
 import Omanyd from "omanyd";
 import Joi from "joi";
 import type { AppOptions } from "next-auth";
+import type { EmailSessionProvider } from "next-auth/adapters";
 
 import nextAuthDynamodb, {
   getAccount,
@@ -291,6 +292,88 @@ describe("next-auth-dynamodb", () => {
       it("should should resolve delete calls", async () => {
         const adapter = await nextAuthDynamodb.getAdapter(opts);
         await expect(adapter.deleteSession("")).resolves.toBeUndefined();
+      });
+    });
+
+    describe("verificationRequest", () => {
+      let mockEmailSessonProvider: EmailSessionProvider;
+      beforeEach(() => {
+        mockEmailSessonProvider = ({
+          sendVerificationRequest: () => Promise.resolve(),
+        } as unknown) as EmailSessionProvider;
+      });
+
+      it("should save and return the verification request", async () => {
+        const adapter = await nextAuthDynamodb.getAdapter(opts);
+        const savedVerificationRequest = await adapter.createVerificationRequest(
+          "foo@bar.com",
+          "url",
+          "token",
+          "secret",
+          mockEmailSessonProvider,
+          opts
+        );
+        const readVerificationRequest = await adapter.getVerificationRequest(
+          "foo@bar.com",
+          "token",
+          "secret",
+          mockEmailSessonProvider
+        );
+        expect(readVerificationRequest).toEqual(savedVerificationRequest);
+      });
+
+      it("should call the email provider when creating", async () => {
+        const sendVerificationRequestSpy = jest
+          .spyOn(mockEmailSessonProvider, "sendVerificationRequest")
+          .mockResolvedValue(undefined);
+        const adapter = await nextAuthDynamodb.getAdapter({
+          ...opts,
+          baseUrl: "baseUrl",
+        });
+        await adapter.createVerificationRequest(
+          "foo@bar.com",
+          "url",
+          "token",
+          "secret",
+          mockEmailSessonProvider,
+          opts
+        );
+
+        expect(sendVerificationRequestSpy).toHaveBeenCalledWith({
+          identifier: "foo@bar.com",
+          url: "url",
+          token: "token",
+          baseUrl: "baseUrl",
+          provider: mockEmailSessonProvider,
+        });
+      });
+
+      it("should delete the verification request so it can no longer be read", async () => {
+        const adapter = await nextAuthDynamodb.getAdapter({
+          ...opts,
+          baseUrl: "baseUrl",
+        });
+        await adapter.createVerificationRequest(
+          "foo@bar.com",
+          "url",
+          "token",
+          "secret",
+          mockEmailSessonProvider,
+          opts
+        );
+        await adapter.deleteVerificationRequest(
+          "foo@bar.com",
+          "token",
+          "secret",
+          mockEmailSessonProvider
+        );
+        const readVerificationRequest = await adapter.getVerificationRequest(
+          "foo@bar.com",
+          "token",
+          "secret",
+          mockEmailSessonProvider
+        );
+        expect(readVerificationRequest).toBeNull();
       });
     });
   });
